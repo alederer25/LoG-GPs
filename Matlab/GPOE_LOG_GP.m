@@ -380,9 +380,7 @@ classdef GPOE_LOG_GP <handle
             out = 0;
             outVar = 0;
             if(nargout>3)
-                gamma = 0;
                 brs = 0;
-                outVar = 0;
                 num = obj.xSize^(obj.xSize/2)*(max(obj.XteMax-obj.XteMin)^obj.xSize)*obj.count;
                 logden = log(obj.delta)+obj.xSize*log(2*obj.tau);
                 beta = 2*(log(num)- logden);
@@ -409,7 +407,7 @@ classdef GPOE_LOG_GP <handle
             out = out*outVar;
             outLik = log(max(1e-300,normpdf(yTest,out,sqrt(outVar+obj.sigN^2))));
             if(nargout>3)
-                varargout{1} = 2*sqrt(beta)* brs * outVar + gamma;
+                varargout{1} = 2*sqrt(beta)* brs * outVar;
             end
         end
     end

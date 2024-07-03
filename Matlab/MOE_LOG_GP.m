@@ -20,6 +20,12 @@ classdef MOE_LOG_GP <handle
         wo = 10; %ratio between width and overlapping region
         oEffect = [0 0 0]; %count data in [left, overlapping, right]
         divCount = 0;
+
+        tau = 1e-4 % Grid constant, needs to be sufficiently small
+        sigma2_min = 0.01; %lower bound for GP variance in error bounds
+        delta = 0.01 % probability to violate bound
+        XteMax = 1; %max of the considered domain, needs to be manually set!
+        XteMin = -1; %min of the considered domain, needs to be manually set!
     end
     
     properties(Access = protected)
@@ -347,7 +353,7 @@ classdef MOE_LOG_GP <handle
             obj.addPoint(x,y,model)
         end
         
-        function [out, outVar,outLik] = predict(obj,x,yTest)
+        function [out, outVar,outLik,varargout] = predict(obj,x,yTest)
             moP = zeros(2,900);% start from the root
             mCount = 1;
             moP(1,1) = 1;
@@ -372,6 +378,12 @@ classdef MOE_LOG_GP <handle
             end
             out = 0;
             outVar = 0;
+            if(nargout>3)
+                brs = 0;
+                num = obj.xSize^(obj.xSize/2)*(max(obj.XteMax-obj.XteMin)^obj.xSize)*obj.count;
+                logden = log(obj.delta)+obj.xSize*log(2*obj.tau);
+                beta = 2*(log(num)- logden);
+            end
             for i=1:mCount
                 model = moP(1,i);
                 pred = ( obj.kernel(obj.X(:,(obj.auxUbic(model)-1)*obj.pts+1:...
@@ -384,9 +396,16 @@ classdef MOE_LOG_GP <handle
                     (obj.auxUbic(model)-1)*obj.pts+obj.localCount(model)), x);
                 outVar= outVar + ((obj.kernel(x,x)-v'*v)+pred^2)*moP(2,i);
                 out = out+pred*moP(2,i);
+                if(nargout>3)
+                    v2 = (obj.kernel(x,x)-v'*v);
+                    brs = brs + moP(2,i)*sqrt(max(v2,obj.sigma2_min));
+                end
             end
             outVar = outVar - out^2;
             outLik = log(max(1e-300,normpdf(yTest,out,sqrt(outVar+obj.sigN^2))));
+            if(nargout>3)
+                varargout{1} = 2*sqrt(beta)* brs;
+            end
         end
     end
 end
