@@ -26,6 +26,7 @@ classdef MOE_LOG_GP <handle
         delta = 0.01 % probability to violate bound
         XteMax = 1; %max of the considered domain, needs to be manually set!
         XteMin = -1; %min of the considered domain, needs to be manually set!
+        beta_heur = 0; %heuristic value for error bound computation, set to 0 for computation of theoretical value
     end
     
     properties(Access = protected)
@@ -404,7 +405,12 @@ classdef MOE_LOG_GP <handle
             outVar = outVar - out^2;
             outLik = log(max(1e-300,normpdf(yTest,out,sqrt(outVar+obj.sigN^2))));
             if(nargout>3)
-                varargout{1} = 2*sqrt(beta)* brs;
+                if(obj.beta_heur~=0)
+                    varargout{1} = sqrt(obj.beta_heur)* brs;
+                else
+                    varargout{1} = 2*sqrt(beta)* brs;
+                end
+                
             end
         end
     end
